@@ -7,11 +7,13 @@ pipeline {
             steps {
                 sh '''
                 echo "Building Java project..."
-                echo "Listing workspace contents:"
-                ls
                 cd "Password Protection"
+
+                rm -rf build
                 mkdir -p build
+
                 javac -d build src/*.java
+
                 echo "Build successful"
                 '''
             }
@@ -20,20 +22,23 @@ pipeline {
         stage('Test') {
             steps {
                 sh '''
-                echo "Running JUnit tests for File-Encrypter..."
+                echo "Running JUnit tests..."
                 cd "Password Protection"
 
-                # Download JUnit jar if not already present
-                if [ ! -f junit-platform-console-standalone.jar ]; then
-                    echo "Downloading JUnit..."
-                    curl -L -o junit-platform-console-standalone.jar \
-                    https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.10.0/junit-platform-console-standalone-1.10.0.jar
-                fi
+                # Remove old/corrupted jar
+                rm -f junit-platform-console-standalone.jar
+
+                echo "Downloading JUnit platform..."
+                curl -L -o junit-platform-console-standalone.jar \
+                https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.10.0/junit-platform-console-standalone-1.10.0.jar
+
+                echo "Downloaded file details:"
+                ls -lh junit-platform-console-standalone.jar
 
                 mkdir -p test-build
 
                 # Compile test files
-                javac -cp junit-platform-console-standalone.jar:build \
+                javac -cp "junit-platform-console-standalone.jar:build" \
                 -d test-build test/*.java
 
                 # Run JUnit tests
@@ -49,10 +54,12 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh '''
-                echo "Deploying (Packaging) File-Encrypter Application..."
+                echo "Packaging application..."
                 cd "Password Protection"
+
                 jar cf FileEncrypter.jar -C build .
-                echo "Deployment successful - Artifact ready"
+
+                echo "Artifact created: FileEncrypter.jar"
                 '''
             }
         }
